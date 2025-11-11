@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale-1.0">
+    <title>Health Advice System - Student Project</title>
+    <!-- Load Tailwind CSS --><script src="https://cdn.tailwindcss.com"></script>
+    <!-- Use Inter font --><link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+        html {
+            scroll-behavior: smooth;
+        }
+        /* Custom styling for BMI chart categories */
+        .bmi-underweight { background-color: #60a5fa; } /* blue-400 */
+        .bmi-normal { background-color: #22c55e; }    /* green-500 */
+        .bmi-overweight { background-color: #facc15; } /* yellow-400 */
+        .bmi-obese { background-color: #ef4444; }     /* red-500 */
+
+        /* Calorie chart bar heights */
+        .calorie-bar {
+            position: relative;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            width: 100%; 
+            min-height: 20px;
+            border-top-left-radius: 0.5rem; 
+            border-top-right-radius: 0.5rem;
+            transition: all 0.3s ease-in-out;
+            margin-top: auto;
+        }
+        .calorie-bar span {
+            position: absolute;
+            top: 8px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.875rem;
+            z-index: 10;
+        }
+        
+        /* --- Print Styles --- */
+        @media print {
+            body {
+                background-color: #ffffff !important;
+            }
+            #form-page, #results-page header, #results-page footer, #saved-reports-page {
+                display: none !important;
+            }
+            #results-page {
+                display: block !important;
+                margin: 0;
+                padding: 0;
+            }
+            #results-content {
+                box-shadow: none !important;
+                border: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .grid, .md\:grid-cols-2, .md\:grid-cols-3 {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+            .bg-gray-50, .bg-blue-50, .bg-green-50, .bg-yellow-50, .bg-red-100 {
+                background-color: #ffffff !important;
+                border: 1px solid #e5e7eb !important;
+                box-shadow: none !important;
+            }
+            .calorie-bar {
+                background-color: #d1d5db !important;
+            }
+            .calorie-bar span {
+                color: #000000 !important;
+            }
+            .bmi-underweight, .bmi-normal, .bmi-overweight, .bmi-obese {
+                display: none !important;
+            }
+            .bmi-chart-track {
+                 border: 1px solid #000;
+            }
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    
+    <!-- Main Container -->
+    <div class="w-full max-w-4xl mx-auto my-8 sm:my-12">
+
+        <!-- ===== PAGE 1: THE FORM (Visible by default) ===== -->
+        <div id="form-page">
+            <!-- Header -->
+            <header class="bg-blue-800 text-white p-4 sm:p-6 flex items-center rounded-t-lg shadow-lg">
+                <svg class="w-12 h-12 sm:w-16 sm:h-16 mr-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                <div>
+                    <h1 class="text-xl sm:text-3xl font-bold">Health Advice System</h1>
+                    <p class="text-sm sm:text-base text-blue-200">Made by Students of AKGEC</p>
+                </div>
+            </header>
+
+            <!-- Form Body -->
+            <div class="bg-white p-6 sm:p-8 shadow-lg">
+                <form id="health-form" class="space-y-6">
+                    
+                    <h2 class="text-xl font-semibold text-gray-800 border-b pb-2">Personal Details</h2>
+                    
+                    <!-- --- NEW: Name Field Added --- -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="md:col-span-2">
+                            <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                            <input type="text" id="name"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="e.g., ABCD " required>
+                        </div>
+                        <div>
+                            <label for="age" class="block text-sm font-medium text-gray-700 mb-1">Age (years)</label>
+                            <input type="number" id="age" min="1" max="120"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="e.g., 30" required>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div>
+                            <label for="gender" class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                            <select id="gender" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="weight" class="block text-sm font-medium text-gray-700 mb-1">Weight (kg)</label>
+                            <input type="number" id="weight" min="1"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                   placeholder="e.g., 70" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Height</label>
+                            <div class="flex space-x-3">
+                                <input type="number" id="height-ft" min="1"
+                                       class="w-1/2 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="Feet (e.g., 5)" required>
+                                <input type="number" id="height-in" min="0" max="11"
+                                       class="w-1/2 px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="Inches (e.g., 9)">
+                            </div>
+                        </div>
+                    </div>
+
+                    <h2 class="text-xl font-semibold text-gray-800 border-b pb-2 pt-4">Lifestyle & Symptoms</h2>
+
+                    <div>
+                        <label for="activity" class="block text-sm font-medium text-gray-700 mb-1">Daily Activity Level</label>
+                        <select id="activity" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="1.2">Sedentary (little or no exercise)</option>
+                            <option value="1.375">Lightly Active (light exercise/sports 1-3 days/week)</option>
+                            <option value="1.55">Moderately Active (moderate exercise/sports 3-5 days/week)</option>
+                            <option value="1.725">Very Active (hard exercise/sports 6-7 days/week)</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="symptom-select" class="block text-sm font-medium text-gray-700 mb-1">Primary Symptom (Optional)</label>
+                        <select id="symptom-select" class="w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">-- No primary symptom --</option>
+                            <option value="fever">Fever</option>
+                            <option value="cough">Cough</option>
+                            <option value="headache">Headache</option>
+                            <option value="fatigue">Fatigue</option>
+                            <option value="stomachache">Stomachache</option>
+                            <option value="rash">Rash</option>
+                            <option value="shortness_of_breath">Shortness of Breath</option>
+                            <option value="chest_pain">Chest Pain</option>
+                        </select>
+                    </div>
+
+                    <!-- Error Message -->
+                    <div id="error-message" class="text-red-600 text-center font-medium"></div>
+
+                    <!-- Button Group -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4">
+                        <!-- --- NEW: View Reports Button --- -->
+                        <button type="button" id="view-reports-btn"
+                                class="w-full bg-gray-600 text-white font-semibold py-3 px-6 rounded-md shadow-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 transition-all duration-200">
+                            View Saved Reports
+                        </button>
+                        <!-- Submit Button -->
+                        <button type="submit" id="get-advice-btn"
+                                class="w-full bg-blue-700 text-white font-semibold py-3 px-6 rounded-md shadow-md hover:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200">
+                            Submit for Analysis
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Footer -->
+            <footer class="bg-white p-4 text-center text-sm text-gray-500 rounded-b-lg shadow-lg border-t border-gray-200">
+                © 2025 Health Advice System Project. All rights reserved.
+            </footer>
+        </div>
+
+        <!-- ===== PAGE 2: THE RESULTS (Hidden by default) ===== -->
+        <div id="results-page" class="hidden">
+            <!-- Header -->
+            <header class="bg-blue-800 text-white p-4 sm:p-6 flex items-center justify-between rounded-t-lg shadow-lg">
+                <div>
+                    <h1 class="text-xl sm:text-3xl font-bold">Your Personalized Health Report</h1>
+                    <p class="text-sm sm:text-base text-blue-200">Made by student of AKGEC</p>
+                </div>
+                <!-- Button Group -->
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+                    <!-- --- NEW: Save Report Button --- -->
+                    <button id="save-report-btn" class="bg-green-600 text-white font-semibold py-2 px-4 rounded-md shadow hover:bg-green-700 transition-colors flex items-center justify-center">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M7.707 10.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6a1 1 0 00-2 0v5.586L7.707 10.293zM3 4a1 1 0 011-1h12a1 1 0 011 1v10a1 1 0 01-1 1h-3a1 1 0 110-2h3V5H4v8h3a1 1 0 110 2H4a1 1 0 01-1-1V4z"></path></svg>
+                        Save Report
+                    </button>
+                    <button id="print-button" class="bg-gray-200 text-blue-800 font-semibold py-2 px-4 rounded-md shadow hover:bg-gray-300 transition-colors flex items-center justify-center">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M5 4v3H4a2 2 0 00-2 2v6a2 2 0 002 2h1v-3a1 1 0 011-1h8a1 1 0 011 1v3h1a2 2 0 002-2V9a2 2 0 00-2-2h-1V4a2 2 0 00-2-2H7a2 2 0 00-2 2zm3 0h4v3H8V4zm6 11h-2v-3a1 1 0 00-1-1H9a1 1 0 00-1 1v3H6v-6h8v6z" clip-rule="evenodd"></path></svg>
+                        Print
+                    </button>
+                    <button id="back-button" class="bg-white text-blue-700 font-semibold py-2 px-4 rounded-md shadow hover:bg-gray-100 transition-colors flex items-center justify-center">
+                        &larr; Go Back
+                    </button>
+                </div>
+            </header>
+
+            <!-- Results Content Area -->
+            <div id="results-content" class="bg-white p-6 sm:p-8 shadow-lg space-y-8">
+                <!-- Results will be injected here by JavaScript -->
+            </div>
+            
+            <!-- Footer -->
+            <footer class="bg-white p-4 text-center text-sm text-gray-500 rounded-b-lg shadow-lg border-t border-gray-200">
+                <p class="mb-2">
+                    <strong>Disclaimer:</strong> This advice is not a substitute for professional medical guidance. 
+                    Consult a doctor before making significant health changes.
+                </p>
+                © 2025 Health Advice System Project. All rights reserved.
+            </footer>
+        </div>
+
+        <!-- ===== PAGE 3: SAVED REPORTS (Hidden by default) ===== -->
+        <div id="saved-reports-page" class="hidden">
+            <!-- Header -->
+            <header class="bg-blue-800 text-white p-4 sm:p-6 flex items-center justify-between rounded-t-lg shadow-lg">
+                <div>
+                    <h1 class="text-xl sm:text-3xl font-bold">Saved Health Reports</h1>
+                    <p class="text-sm sm:text-base text-blue-200">Made by student of AKGEC</p>
+                </div>
+                <button id="back-from-reports-btn" class="bg-white text-blue-700 font-semibold py-2 px-4 rounded-md shadow hover:bg-gray-100 transition-colors">
+                    &larr; Back to Form
+                </button>
+            </header>
+
+            <!-- Saved Reports Content Area -->
+            <div class="bg-white p-6 sm:p-8 shadow-lg space-y-4">
+                <div class="flex justify-end">
+                    <button id="clear-reports-btn" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-md shadow hover:bg-red-700 transition-colors">
+                        Clear All Reports
+                    </button>
+                </div>
+                <!-- List container -->
+                <div id="saved-reports-list" class="space-y-4">
+                    <!-- Saved reports will be injected here -->
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <footer class="bg-white p-4 text-center text-sm text-gray-500 rounded-b-lg shadow-lg border-t border-gray-200">
+                © 2025 Health Advice System Project. All rights reserved.
+            </footer>
+        </div>
+
+    </div> <!-- End Main Container -->
+
+
+    <script>
+        // --- GLOBAL VARIABLES & PAGE ELEMENTS ---
+        const formPage = document.getElementById('form-page');
+        const resultsPage = document.getElementById('results-page');
+        const savedReportsPage = document.getElementById('saved-reports-page'); // <-- NEW
+
+        const healthForm = document.getElementById('health-form');
+        const errorMessage = document.getElementById('error-message');
+        const resultsContent = document.getElementById('results-content');
+        
+        // Buttons
+        const backButton = document.getElementById('back-button');
+        const printButton = document.getElementById('print-button');
+        const saveReportButton = document.getElementById('save-report-btn'); // <-- NEW
+        const viewReportsButton = document.getElementById('view-reports-btn'); // <-- NEW
+        const backFromReportsButton = document.getElementById('back-from-reports-btn'); // <-- NEW
+        const clearReportsButton = document.getElementById('clear-reports-btn'); // <-- NEW
+        
+        // Report List
+        const savedReportsList = document.getElementById('saved-reports-list'); // <-- NEW
+        
+        // State variable to hold the data for the currently displayed report
+        let currentReportData = null;
+
+
+        // --- REPORT DATA HANDLING ---
+        
+        /**
+         * Main function to generate and display a report.
+         * @param {object} reportData - The complete data object for a user.
+         * @param {object} options - Options, e.g., { isSaved: false }
+         */
+        function displayReport(reportData, options = {}) {
+            const { name, age, weight, heightFt, heightIn, gender, activityFactor, activityText, selectedSymptom } = reportData;
+
+            // --- Calculations ---
+            const heightInCm = (heightFt * 30.48) + (heightIn * 2.54);
+            const heightInMeters = heightInCm / 100;
+            const bmi = weight / (heightInMeters * heightInMeters);
+            const bmiCategory = getBmiCategory(bmi);
+            
+            let bmr;
+            if (gender === 'male') {
+                bmr = (10 * weight) + (6.25 * heightInCm) - (5 * age) + 5;
+            } else if (gender === 'female') {
+                bmr = (10 * weight) + (6.25 * heightInCm) - (5 * age) - 161;
+            } else {
+                bmr = (10 * weight) + (6.25 * heightInCm) - (5 * age) - 78;
+            }
+            const tdee = bmr * activityFactor;
+
+            // --- Generate HTML Blocks ---
+            
+            // Symptom Advice
+            const symptomBlock = getSymptomAdvice(selectedSymptom, age);
+
+            // Metric Cards
+            const idealWeightRange = getIdealWeightRange(heightInMeters);
+            const metricsHtml = `
+                <h2 class="text-2xl font-semibold text-gray-800 border-b pb-3">Health Report for: ${name}</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-blue-50 p-5 rounded-lg border border-blue-200 shadow-sm">
+                        <h3 class="text-md font-semibold text-blue-800 mb-2">Body Mass Index (BMI)</h3>
+                        <p class="text-4xl font-extrabold text-gray-900">${bmi.toFixed(1)}</p>
+                        <p class="text-lg font-medium text-blue-700">${bmiCategory}</p>
+                        <p class="text-gray-700 text-sm mt-3 leading-relaxed">${getBmiDetails(bmiCategory)}</p>
+                    </div>
+                    <div class="bg-blue-50 p-5 rounded-lg border border-blue-200 shadow-sm">
+                        <h3 class="text-md font-semibold text-blue-800 mb-2">Healthy Weight Range</h3>
+                        <p class="text-3xl font-extrabold text-gray-900">${idealWeightRange.lower} - ${idealWeightRange.upper} <span class="text-xl">kg</span></p>
+                        <p class="text-lg font-medium text-blue-700">For your height</p>
+                        <p class="text-gray-700 text-sm mt-3 leading-relaxed">Based on a healthy BMI range of 18.5 - 24.9.</p>
+                    </div>
+                    <div class="bg-green-50 p-5 rounded-lg border border-green-200 shadow-sm md:col-span-1">
+                        <h3 class="text-md font-semibold text-green-800 mb-2">Est. Daily Calorie Needs (TDEE)</h3>
+                        <p class="text-4xl font-extrabold text-gray-900">${tdee.toFixed(0)} <span class="text-xl">kcal/day</span></p>
+                        <p class="text-lg font-medium text-green-700">Maintenance Level</p>
+                        <p class="text-gray-700 text-sm mt-3 leading-relaxed">Your BMR (at rest) is ${bmr.toFixed(0)}.</p>
+                    </div>
+                </div>
+            `;
+
+            // Visual Charts
+            const chartsHtml = `
+                <h2 class="text-2xl font-semibold text-gray-800 border-b pb-3">Visual Insights</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    ${getBmiChartHtml(bmi)}
+                    ${getCalorieChartHtml(bmiCategory, tdee)}
+                </div>
+            `;
+            
+            // Advice Sections
+            const adviceHtml = `
+                <h2 class="text-2xl font-semibold text-gray-800 border-b pb-3">Personalized Advice</h2>
+                <div class="space-y-6">
+                    ${createAdviceSection('🍎', 'Food & Nutrition', getFoodAdvice(bmiCategory, tdee))}
+                    ${createAdviceSection('🏃‍♂️', 'Daily Routine & Exercise', getRoutineAdvice(age, activityText))}
+                    ${createAdviceSection('💧', 'Water Intake', getWaterAdvice(weight))}
+                    ${createAdviceSection('🛡️', 'General Health', getDiseaseAdvice())}
+                </div>
+            `;
+
+            // --- Assemble and Inject HTML ---
+            let finalHtml = '';
+            if (symptomBlock.isEmergency) {
+                finalHtml = symptomBlock.html + metricsHtml + chartsHtml + adviceHtml;
+            } else {
+                finalHtml = metricsHtml + symptomBlock.html + chartsHtml + adviceHtml;
+            }
+            resultsContent.innerHTML = finalHtml;
+
+            // --- Manage Save Button State ---
+            if (options.isSaved) {
+                saveReportButton.disabled = true;
+                saveReportButton.textContent = "Report Saved";
+                saveReportButton.classList.add("bg-green-700", "opacity-70");
+                saveReportButton.classList.remove("bg-green-600", "hover:bg-green-700");
+            } else {
+                saveReportButton.disabled = false;
+                saveReportButton.innerHTML = `<svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M7.707 10.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V6a1 1 0 00-2 0v5.586L7.707 10.293zM3 4a1 1 0 011-1h12a1 1 0 011 1v10a1 1 0 01-1 1h-3a1 1 0 110-2h3V5H4v8h3a1 1 0 110 2H4a1 1 0 01-1-1V4z"></path></svg> Save Report`;
+                saveReportButton.classList.remove("bg-green-700", "opacity-70");
+                saveReportButton.classList.add("bg-green-600", "hover:bg-green-700");
+            }
+        }
+
+
+        // --- PAGE 1: FORM LOGIC ---
+        healthForm.addEventListener('submit', function(event) {
+            event.preventDefault(); 
+            
+            // --- 1. Get Elements & Validate ---
+            const nameInput = document.getElementById('name');
+            const ageInput = document.getElementById('age');
+            const weightInput = document.getElementById('weight');
+            const heightFtInput = document.getElementById('height-ft');
+
+            errorMessage.textContent = ''; 
+            
+            const name = nameInput.value;
+            const age = parseInt(ageInput.value);
+            const weight = parseFloat(weightInput.value);
+            const heightFt = parseInt(heightFtInput.value);
+
+            if (!name) {
+                errorMessage.textContent = 'Please enter your name.';
+                return;
+            }
+            if (isNaN(age) || age <= 0 || 
+                isNaN(weight) || weight <= 0 || 
+                isNaN(heightFt) || heightFt <= 0) {
+                errorMessage.textContent = 'Please enter valid positive numbers for age, weight, and height.';
+                return;
+            }
+
+            // --- 2. Build Report Data Object ---
+            const activitySelect = document.getElementById('activity');
+            currentReportData = {
+                id: Date.now(), // Unique ID for saving/deleting
+                name: name,
+                age: age,
+                weight: weight,
+                heightFt: heightFt,
+                heightIn: parseInt(document.getElementById('height-in').value) || 0,
+                gender: document.getElementById('gender').value,
+                activityFactor: parseFloat(activitySelect.value),
+                activityText: activitySelect.options[activitySelect.selectedIndex].text,
+                selectedSymptom: document.getElementById('symptom-select').value,
+                date: new Date().toLocaleDateString() // Add a readable date
+            };
+            
+            // --- 3. Generate Report and Switch Pages ---
+            displayReport(currentReportData, { isSaved: false });
+            formPage.classList.add('hidden');
+            resultsPage.classList.remove('hidden');
+            window.scrollTo(0, 0); 
+        });
+
+
+        // --- PAGE 2: RESULTS PAGE LOGIC ---
+        backButton.addEventListener('click', function() {
+            resultsPage.classList.add('hidden');
+            formPage.classList.remove('hidden');
+            window.scrollTo(0, 0);
+        });
+
+        printButton.addEventListener('click', function() {
+            window.print();
+        });
+
+        saveReportButton.addEventListener('click', function() {
+            if (!currentReportData) return;
+
+            let reports = JSON.parse(localStorage.getItem('healthReports')) || [];
+            
+            // Check if this report (by id) is already saved
+            const existingIndex = reports.findIndex(report => report.id === currentReportData.id);
+            if (existingIndex > -1) {
+                // It's already saved (e.g., viewing a saved report)
+                reports[existingIndex] = currentReportData; // Update it just in case
+            } else {
+                // It's a new report, add it
+                reports.push(currentReportData);
+            }
+
+            localStorage.setItem('healthReports', JSON.stringify(reports));
+            
+            // Update button state
+            saveReportButton.disabled = true;
+            saveReportButton.textContent = "Report Saved";
+            saveReportButton.classList.add("bg-green-700", "opacity-70");
+            saveReportButton.classList.remove("bg-green-600", "hover:bg-green-700");
+        });
+
+
+        // --- PAGE 3: SAVED REPORTS LOGIC ---
+        viewReportsButton.addEventListener('click', function() {
+            formPage.classList.add('hidden');
+            savedReportsPage.classList.remove('hidden');
+            loadSavedReports();
+            window.scrollTo(0, 0);
+        });
+
+        backFromReportsButton.addEventListener('click', function() {
+            savedReportsPage.classList.add('hidden');
+            formPage.classList.remove('hidden');
+            window.scrollTo(0, 0);
+        });
+
+        clearReportsButton.addEventListener('click', function() {
+            // Add a confirmation
+            if (confirm("Are you sure you want to delete ALL saved reports? This cannot be undone.")) {
+                localStorage.removeItem('healthReports');
+                loadSavedReports();
+            }
+        });
+
+        /**
+         * Loads reports from localStorage and displays them
+         */
+        function loadSavedReports() {
+            let reports = JSON.parse(localStorage.getItem('healthReports')) || [];
+            savedReportsList.innerHTML = ''; // Clear list
+
+            if (reports.length === 0) {
+                savedReportsList.innerHTML = `<p class="text-gray-600 text-center">No reports have been saved yet.</p>`;
+                clearReportsButton.classList.add('hidden');
+                return;
+            }
+
+            clearReportsButton.classList.remove('hidden');
+            
+            reports.reverse().forEach(report => { // Show newest first
+                // Recalculate BMI for display
+                const heightInCm = (report.heightFt * 30.48) + (report.heightIn * 2.54);
+                const heightInMeters = heightInCm / 100;
+                const bmi = report.weight / (heightInMeters * heightInMeters);
+
+                const cardHtml = `
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200 shadow-sm flex items-center justify-between">
+                        <div>
+                            <h4 class="text-lg font-semibold text-blue-800">${report.name}</h4>
+                            <p class="text-sm text-gray-600">Saved on: ${report.date || 'N/A'}</p>
+                            <p class="text-sm text-gray-600">Age: ${report.age} | Weight: ${report.weight}kg | BMI: ${bmi.toFixed(1)}</p>
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="view-report-btn bg-blue-600 text-white py-2 px-3 rounded-md shadow hover:bg-blue-700" data-report-id="${report.id}">
+                                View
+                            </button>
+                            <button class="delete-report-btn bg-red-600 text-white py-2 px-3 rounded-md shadow hover:bg-red-700" data-report-id="${report.id}">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                `;
+                savedReportsList.innerHTML += cardHtml;
+            });
+        }
+
+        // Event listener for View/Delete buttons on saved reports list
+        savedReportsList.addEventListener('click', function(event) {
+            let reports = JSON.parse(localStorage.getItem('healthReports')) || [];
+
+            // Check if Delete button was clicked
+            const deleteButton = event.target.closest('.delete-report-btn');
+            if (deleteButton) {
+                const reportId = deleteButton.getAttribute('data-report-id');
+                if (confirm("Are you sure you want to delete this report?")) {
+                    const newReports = reports.filter(report => report.id.toString() !== reportId);
+                    localStorage.setItem('healthReports', JSON.stringify(newReports));
+                    loadSavedReports(); // Refresh the list
+                }
+                return; // Stop further processing
+            }
+
+            // Check if View button was clicked
+            const viewButton = event.target.closest('.view-report-btn');
+            if (viewButton) {
+                const reportId = viewButton.getAttribute('data-report-id');
+                const reportToView = reports.find(report => report.id.toString() === reportId);
+                
+                if (reportToView) {
+                    currentReportData = reportToView; // Set as current
+                    displayReport(reportToView, { isSaved: true }); // Display it
+                    
+                    // Switch pages
+                    savedReportsPage.classList.add('hidden');
+                    resultsPage.classList.remove('hidden');
+                    window.scrollTo(0, 0);
+                }
+            }
+        });
+
+        
+        // --- ### ALL HELPER FUNCTIONS ### ---
+
+        function createAdviceSection(icon, title, adviceHtml) {
+            return `
+                <div class="bg-gray-50 p-5 rounded-lg border border-gray-200 shadow-sm">
+                    <h3 class="text-xl font-semibold text-gray-800 mb-3 flex items-center">${icon} <span class="ml-2">${title}</span></h3>
+                    <div class="text-gray-700 space-y-3 text-base leading-relaxed">${adviceHtml}</div>
+                </div>
+            `;
+        }
+        
+        function getSymptomAdvice(symptom, age) {
+            if (!symptom || symptom === "") return { html: '', isEmergency: false };
+            let adviceList = '', title = '', isEmergency = false, symptomName = symptom.replace('_', ' ');
+            switch (symptom) {
+                case 'fever':
+                    title = 'General Advice for Fever';
+                    adviceList = `...`; // (logic as before)
+                    break;
+                case 'cough':
+                    title = 'General Advice for Cough';
+                    adviceList = `...`; // (logic as before)
+                    break;
+                case 'headache':
+                    title = 'General Advice for Headache';
+                    adviceList = `...`; // (logic as before)
+                    break;
+                case 'fatigue':
+                    title = 'General Advice for Fatigue';
+                    adviceList = `...`; // (logic as before)
+                    break;
+                case 'stomachache':
+                    title = 'General Advice for Stomachache';
+                    adviceList = `...`; // (logic as before)
+                    break;
+                case 'chest_pain':
+                    title = '!! IMMEDIATE ATTENTION REQUIRED !!';
+                    isEmergency = true;
+                    adviceList = `...`; // (logic as before)
+                    break;
+                case 'shortness_of_breath':
+                    title = '!! IMMEDIATE ATTENTION REQUIRED !!';
+                    isEmergency = true;
+                    adviceList = `...`; // (logic as before)
+                    break;
+                case 'rash':
+                    title = 'General Advice for a Rash';
+                    adviceList = `...`; // (logic as before)
+                    break;
+            }
+            // Re-adding full logic to avoid '...'
+            switch (symptom) {
+                case 'fever':
+                    title = 'General Advice for Fever';
+                    adviceList = `
+                        <li><strong>Rest:</strong> Get plenty of rest.</li>
+                        <li><strong>Hydration:</strong> Drink plenty of fluids (water, broth) to prevent dehydration.</li>
+                        <li><strong>Medication:</strong> Over-the-counter (OTC) medications like acetaminophen or ibuprofen can help reduce fever. Follow dosing instructions.</li>
+                        <li><strong>When to see a doctor:</strong> If your fever is very high (above 103°F or 39.4°C), lasts more than 3 days, or is with severe headache, stiff neck, or confusion.</li>
+                    `;
+                    if (age <= 3) {
+                        adviceList += `<li><strong class="text-red-600">AGE WARNING (Under 3):</strong> A fever in an infant or toddler can be very serious. Please contact a doctor immediately for guidance.</li>`;
+                    } else if (age >= 65) {
+                        adviceList += `<li><strong class="text-yellow-700">AGE NOTE (Over 65):</strong> Fevers in older adults can indicate a more serious infection. Monitor closely.</li>`;
+                    }
+                    break;
+                case 'cough':
+                    title = 'General Advice for Cough';
+                    adviceList = `
+                        <li><strong>Hydration:</strong> Drink warm fluids (tea with honey, soup) to soothe your throat.</li>
+                        <li><strong>Humidifier:</strong> Use a humidifier or take a steamy shower to loosen mucus.</li>
+                        <li><strong>Lozenges:</strong> Sucking on throat lozenges can ease a dry throat.</li>
+                        <li><strong>When to see a doctor:</strong> If your cough is severe, lasts more than a few weeks, produces blood, or is with fever or difficulty breathing.</li>
+                    `;
+                    break;
+                case 'headache':
+                    title = 'General Advice for Headache';
+                    adviceList = `
+                        <li><strong>Hydration:</strong> Drink a large glass of water. Dehydration is a common cause.</li>
+                        <li><strong>Rest:</strong> Rest in a quiet, dark room.</li>
+                        <li><strong>Medication:</strong> Over-the-counter (OTC) pain relievers like ibuprofen or acetaminophen may help.</li>
+                        <li><strong>When to see a doctor:</strong> If this is the "worst headache of your life," comes on suddenly, or is with fever, stiff neck, or confusion.</li>
+                    `;
+                    break;
+                case 'fatigue':
+                    title = 'General Advice for Fatigue';
+                    adviceList = `
+                        <li><strong>Sleep:</strong> Prioritize 7-9 hours of quality sleep.</li>
+                        <li><strong>Diet:</strong> Ensure you are eating regular, balanced meals. Avoid excess sugar and caffeine.</li>
+                        <li><strong>Activity:</strong> Light exercise, like a short walk, can actually boost energy levels.</li>
+                        <li><strong>When to see a doctor:</strong> If fatigue is persistent for more than two weeks, is severe, or is unexplained.</li>
+                    `;
+                    break;
+                case 'stomachache':
+                    title = 'General Advice for Stomachache';
+                    adviceList = `
+                        <li><strong>Diet:</strong> Stick to bland foods (like crackers, rice, bananas). Avoid spicy, fatty, or acidic foods.</li>
+                        <li><strong>Hydration:</strong> Sip water or clear fluids.</li>
+                        <li><strong>Heat:</strong> A warm water bottle on the abdomen can help relax cramps.</li>
+                        <li><strong>When to see a doctor:</strong> If the pain is severe, sudden, or localized (especially in the lower right), or if it's accompanied by fever, persistent vomiting, or blood.</li>
+                    `;
+                    break;
+                case 'chest_pain':
+                    title = '!! IMMEDIATE ATTENTION REQUIRED !!';
+                    isEmergency = true;
+                    adviceList = `
+                        <p class="font-semibold text-lg">Chest pain can be a sign of a heart attack or other serious medical emergency. Do not self-diagnose.</p>
+                        <li class="list-none mt-3"><strong>Call Emergency Services Immediately:</strong> Dial your local emergency number (e.g., <strong>102, 108, or 112</strong> in India) and go to the nearest emergency room.</li>
+                        <li class="list-none"><strong>Do Not Drive Yourself:</strong> Call for an ambulance.</li>
+                        <li class="list-none"><strong>Rest:</strong> While waiting for help, sit down and rest.</li>
+                    `;
+                    break;
+                case 'shortness_of_breath':
+                    title = '!! IMMEDIATE ATTENTION REQUIRED !!';
+                    isEmergency = true;
+                    adviceList = `
+                        <p class="font-semibold text-lg">Sudden or severe shortness of breath can be a sign of a serious, life-threatening condition.</p>
+                        <li class="list-none mt-3"><strong>Call Emergency Services Immediately:</strong> Dial your local emergency number (e.g., <strong>102, 108, or 112</strong> in India) if your breathing difficulty is sudden, severe, or with chest pain or fainting.</li>
+                        <li class="list-none"><strong>Do Not Wait:</strong> This is a medical emergency.</li>
+                        <li class="list-none"><strong>Rest:</strong> Sit upright and try to remain calm while waiting for help.</li>
+                    `;
+                    break;
+                case 'rash':
+                    title = 'General Advice for a Rash';
+                    adviceList = `
+                        <li><strong>Identify & Avoid Irritant:</strong> If you know what caused the rash (e.g., new soap, plant), avoid further contact.</li>
+                        <li><strong>Keep Clean & Dry:</strong> Gently wash the area with mild soap and water.</li>
+                        <li><strong>Soothe Itch:</strong> Use a cool compress or an over-the-counter calamine lotion.</li>
+                        <li><strong>Don't Scratch:</strong> Scratching can lead to infection.</li>
+                        <li><strong>When to see a doctor:</strong> If the rash spreads rapidly, is painful, shows signs of infection (pus), or is accompanied by fever.</li>
+                    `;
+                    break;
+            }
+            let containerClass = isEmergency ? 'bg-red-100 p-5 rounded-lg border border-red-500 shadow-lg' : 'bg-yellow-50 p-5 rounded-lg border border-yellow-300 shadow-sm';
+            let titleClass = isEmergency ? 'text-red-800' : 'text-yellow-900';
+            let listType = isEmergency ? 'ul class="space-y-2"' : 'ul class="list-disc list-inside space-y-2"';
+            const html = `
+                <h2 class="text-2xl font-semibold text-gray-800 border-b pb-3 capitalize">${isEmergency ? "Emergency Warning" : `Symptom Advice: ${symptomName}`}</h2>
+                <div class="${containerClass}">
+                    <h3 class="text-xl font-bold ${titleClass} mb-3">${title}</h3>
+                    <div class="text-gray-900 space-y-3 text-base leading-relaxed">
+                        <${listType}> ${adviceList} </ul>
+                    </div>
+                </div>
+            `;
+            return { html: html, isEmergency: isEmergency };
+        }
+        
+        function getBmiChartHtml(bmi) {
+            const chartMinBmi = 15, chartMaxBmi = 40;
+            let bmiPercent = ((bmi - chartMinBmi) / (chartMaxBmi - chartMinBmi)) * 100;
+            bmiPercent = Math.max(0, Math.min(100, bmiPercent));
+            return `
+                <div class="bg-gray-50 p-5 rounded-lg border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-8">Your BMI on the Scale</h3>
+                    <div class="relative h-4" style="width: calc(100% - 16px); margin-left: 8px; margin-right: 8px;">
+                        <div class="absolute top-0 h-4 w-4 bg-blue-700 rounded-full -mt-3.5 -ml-2 transform transition-all duration-500 ease-out" 
+                             style="left: ${bmiPercent}%;" title="Your BMI: ${bmi.toFixed(1)}">
+                            <span class="absolute -bottom-6 left-1/2 -translate-x-1/2 text-sm font-bold text-blue-700">${bmi.toFixed(1)}</span>
+                        </div>
+                    </div>
+                    <div class="relative w-full h-3 rounded-full overflow-hidden mt-8 bmi-chart-track">
+                        <div class="absolute top-0 left-0 h-full bmi-underweight" style="width: 14%;"></div>
+                        <div class="absolute top-0 left-[14%] h-full bmi-normal" style="width: 25.6%;"></div>
+                        <div class="absolute top-0 left-[39.6%] h-full bmi-overweight" style="width: 20%;"></div>
+                        <div class="absolute top-0 left-[59.6%] h-full bmi-obese" style="width: 40.4%;"></div>
+                    </div>
+                    <div class="flex justify-between text-xs text-gray-600 mt-1">
+                        <span class="w-[14%] text-left font-medium text-blue-800">Underweight</span>
+                        <span class="w-[25.6%] text-center font-medium text-green-800">Normal</span>
+                        <span class="w-[20%] text-center font-medium text-yellow-800">Overweight</span>
+                        <span class="w-[40.4%] text-right font-medium text-red-800">Obese</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getCalorieChartHtml(bmiCategory, tdee) {
+            let calorieChartHtml = '';
+            const maintenance = tdee.toFixed(0), mildDeficit = (tdee - 500).toFixed(0), mildSurplus = (tdee + 300).toFixed(0);
+            const maxCalorie = Math.max(parseFloat(maintenance), parseFloat(mildDeficit), parseFloat(mildSurplus));
+            function getBarHeight(value) { return (value <= 0) ? '0%' : `${(value / maxCalorie * 100)}%`; }
+            if (bmiCategory === 'Underweight') {
+                calorieChartHtml = `...`; // (logic as before)
+            } else if (bmiCategory === 'Overweight' || bmiCategory === 'Obese') {
+                calorieChartHtml = `...`; // (logic as before)
+            } else {
+                calorieChartHtml = `...`; // (logic as before)
+            }
+            // Re-adding full logic
+            if (bmiCategory === 'Underweight') {
+                calorieChartHtml = `
+                    <div class="flex items-end h-40 bg-gray-100 p-2 rounded-lg justify-center space-x-4">
+                        <div class="flex flex-col h-full w-1/3 text-center">
+                            <div class="calorie-bar bg-gray-400" style="height: ${getBarHeight(maintenance)};" title="Maintenance: ${maintenance} kcal"><span>${maintenance}</span></div>
+                            <span class="text-xs font-medium text-gray-700 mt-1 block">Maintenance</span>
+                        </div>
+                        <div class="flex flex-col h-full w-1/3 text-center">
+                            <div class="calorie-bar bg-green-500" style="height: ${getBarHeight(mildSurplus)};" title="Surplus Goal: ${mildSurplus} kcal"><span>${mildSurplus}</span></div>
+                            <span class="text-xs font-medium text-green-700 mt-1 block">Gain Goal</span>
+                        </div>
+                    </div>`;
+            } else if (bmiCategory === 'Overweight' || bmiCategory === 'Obese') {
+                calorieChartHtml = `
+                    <div class="flex items-end h-40 bg-gray-100 p-2 rounded-lg justify-center space-x-4">
+                        <div class="flex flex-col h-full w-1/3 text-center">
+                            <div class="calorie-bar bg-red-500" style="height: ${getBarHeight(mildDeficit)};" title="Deficit Goal: ${mildDeficit} kcal"><span>${mildDeficit}</span></div>
+                            <span class="text-xs font-medium text-red-700 mt-1 block">Loss Goal</span>
+                        </div>
+                        <div class="flex flex-col h-full w-1/3 text-center">
+                            <div class="calorie-bar bg-gray-400" style="height: ${getBarHeight(maintenance)};" title="Maintenance: ${maintenance} kcal"><span>${maintenance}</span></div>
+                            <span class="text-xs font-medium text-gray-700 mt-1 block">Maintenance</span>
+                        </div>
+                    </div>`;
+            } else {
+                calorieChartHtml = `
+                    <div class="flex items-end h-40 bg-gray-100 p-2 rounded-lg justify-center space-x-4">
+                        <div class="flex flex-col h-full w-1/3 text-center">
+                            <div class="calorie-bar bg-green-500" style="height: ${getBarHeight(maintenance)};" title="Maintenance: ${maintenance} kcal"><span>${maintenance}</span></div>
+                            <span class="text-xs font-medium text-green-700 mt-1 block">Maintenance</span>
+                        </div>
+                    </div>`;
+            }
+            return `
+                <div class="bg-gray-50 p-5 rounded-lg border border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Estimated Calorie Goals</h3>
+                    ${calorieChartHtml}
+                    <p class="text-sm text-gray-600 mt-4 text-center">A visual guide to daily calorie needs based on your goal.</p>
+                </div>
+            `;
+        }
+        
+        function getIdealWeightRange(heightInMeters) {
+            const lowerBMI = 18.5, upperBMI = 24.9;
+            const lowerWeight = (lowerBMI * (heightInMeters * heightInMeters)).toFixed(1);
+            const upperWeight = (upperBMI * (heightInMeters * heightInMeters)).toFixed(1);
+            return { lower: lowerWeight, upper: upperWeight };
+        }
+
+        function getBmiCategory(bmi) {
+            if (bmi < 18.5) return 'Underweight';
+            if (bmi >= 18.5 && bmi < 24.9) return 'Normal Weight';
+            if (bmi >= 25 && bmi < 29.9) return 'Overweight';
+            if (bmi >= 30) return 'Obese';
+            return 'N/A';
+        }
+
+        function getBmiDetails(category) {
+            switch (category) {
+                case 'Underweight': return 'Your BMI is in the underweight range. It\'s recommended to consult a healthcare provider to ensure you are meeting your nutritional needs.';
+                case 'Normal Weight': return 'Your BMI is in the healthy range. Continue to maintain a balanced diet and regular physical activity.';
+                case 'Overweight': return 'Your BMI is in the overweight range. Consider focusing on balanced nutrition and increasing physical activity.';
+                case 'Obese': return 'Your BMI is in the obese range. It is strongly recommended to consult a healthcare provider for a personalized health plan.';
+                default: return '';
+            }
+        }
+
+        function getRoutineAdvice(age, activityText) {
+            let exerciseAdvice = '';
+            if (age < 18) exerciseAdvice = '<strong>Children & Teens (6-17):</strong> Aim for at least 60 minutes of moderate-to-vigorous physical activity daily.';
+            else if (age >= 18 && age <= 64) exerciseAdvice = '<strong>Adults (18-64):</strong> Aim for at least 150 minutes of moderate-intensity aerobic exercise (like brisk walking) or 75 minutes of vigorous-intensity exercise each week, plus muscle-strengthening activities on 2 or more days.';
+            else exerciseAdvice = '<strong>Older Adults (65+):</strong> Aim for at least 150 minutes of moderate-intensity activity weekly, as you are able. Focus on activities that improve balance and flexibility.';
+            return `
+                <ul class="list-disc list-inside space-y-2">
+                    <li><strong>Your Activity Level:</strong> You selected "${activityText}". ${exerciseAdvice}</li>
+                    <li><strong>Sleep:</strong> Aim for 7-9 hours of quality sleep per night for adults. Establish a consistent sleep schedule.</li>
+                    <li><strong>Stress Management:</strong> Incorporate stress-reducing activities like meditation, walking, or hobbies into your daily routine.</li>
+                </ul>
+            `;
+        }
+        
+        function getFoodAdvice(bmiCategory, tdee) {
+            let calorieAdvice = '', calorieGoal = tdee;
+            const mildDeficit = (tdee - 500).toFixed(0), mildSurplus = (tdee + 300).toFixed(0);
+            switch (bmiCategory) {
+                case 'Underweight':
+                    calorieAdvice = `To support healthy weight gain, aim for a modest calorie surplus. A target of <strong>${mildSurplus} kcal/day</strong> from nutrient-dense foods (lean protein, healthy fats, whole grains) is a potential starting point.`;
+                    calorieGoal = mildSurplus;
+                    break;
+                case 'Normal Weight':
+                    calorieAdvice = `To maintain your current weight, aim to consume around <strong>${tdee.toFixed(0)} kcal/day</strong>. Focus on a balanced and varied diet.`;
+                    calorieGoal = tdee.toFixed(0);
+                    break;
+                case 'Overweight': case 'Obese':
+                    calorieAdvice = `For sustainable weight management, a mild calorie deficit is recommended. A target of <strong>${mildDeficit} kcal/day</strong> may be a sensible starting point. Emphasize whole foods, vegetables, and lean protein.`;
+                    calorieGoal = mildDeficit;
+                    break;
+            }
+            const macros = {
+                carbs: ((calorieGoal * 0.40) / 4).toFixed(0),
+                protein: ((calorieGoal * 0.30) / 4).toFixed(0),
+                fat: ((calorieGoal * 0.30) / 9).toFixed(0)
+            };
+            return `
+                <p><strong>Calorie Goal:</strong> ${calorieAdvice}</p>
+                <p class="mt-4"><strong>Sample Macronutrient Targets (Balanced Diet):</strong></p>
+                <p class="text-sm text-gray-600">Based on your <strong>${calorieGoal} kcal</strong> goal. This is just a sample; your needs may vary.</p>
+                <table class="w-full mt-2 text-left border-collapse">
+                    <thead><tr class="bg-gray-100"><th class="p-2 border border-gray-300">Macronutrient</th><th class="p-2 border border-gray-300">Percentage</th><th class="p-2 border border-gray-300">Grams/Day</th></tr></thead>
+                    <tbody>
+                        <tr><td class="p-2 border border-gray-300 font-medium">Protein</td><td class="p-2 border border-gray-300">30%</td><td class="p-2 border border-gray-300">${macros.protein}g</td></tr>
+                        <tr><td class="p-2 border border-gray-300 font-medium">Carbohydrates</td><td class="p-2 border border-gray-300">40%</td><td class="p-2 border border-gray-300">${macros.carbs}g</td></tr>
+                        <tr><td class="p-2 border border-gray-300 font-medium">Fat</td><td class="p-2 border border-gray-300">30%</td><td class="p-2 border border-gray-300">${macros.fat}g</td></tr>
+                    </tbody>
+                </table>
+                <p class="mt-4"><strong>General Nutrition Principles:</strong></p>
+                <ul class="list-disc list-inside space-y-2">
+                    <li><strong>Eat Whole Foods:</strong> Prioritize fruits, vegetables, whole grains, and lean proteins.</li>
+                    <li><strong>Limit Processed Items:</strong> Minimize intake of sugary drinks, fast food, and highly processed snacks.</li>
+                    <li><strong>Healthy Fats:</strong> Include sources of healthy fats like avocados, nuts, seeds, and olive oil.</li>
+                </ul>
+            `;
+        }
+
+        function getWaterAdvice(weight) {
+            const avgLitres = (weight * 0.033).toFixed(1);
+            const glasses = (avgLitres / 0.25).toFixed(0);
+            return `
+                <p>A general guideline for daily water intake is around <strong>${avgLitres} liters</strong> (approx. <strong>${glasses} glasses</strong> of 250ml). </p>
+                <ul class="list-disc list-inside space-y-2 mt-2">
+                    <li>This amount varies based on activity, climate, and personal health.</li>
+                    <li>Increase your intake if you are physically active or in a hot climate.</li>
+                    <li>Listen to your body; drink when you feel thirsty.</li>
+                </ul>
+            `;
+        }
+
+        function getDiseaseAdvice() {
+            return `
+                <ul class="list-disc list-inside space-y-2">
+                    <li><strong>Regular Check-ups:</strong> Schedule annual check-ups with your doctor for preventive screening.</li>
+                    <li><strong>Vaccinations:</strong> Stay up-to-date with all recommended immunizations.</li>
+                    <li><strong>Hygiene:</strong> Wash hands frequently with soap and water to prevent the spread of infections.</li>
+                    <li><strong>Avoid Smoking:</strong> Avoid tobacco use in all its forms.</li>
+                    <li><strong>Limit Alcohol:</strong> If you drink, do so in moderation.</li>
+                </ul>
+            `;
+        }
+
+    </script>
+</body>
+</html>
